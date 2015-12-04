@@ -1,4 +1,5 @@
 local ffi = require("ffi")
+
 local export = {}
 
 ffi.cdef [[
@@ -39,7 +40,7 @@ end
 ------------------------------------------------------------------------------
 local function filterRegions(line, regionName)
 	local startAddr, endAddr, permission, offset, dev1, dev2, length, _, from = string.match(line, "(%x+)-(%x+) (.+) (%x+) (%x+):(%x+) (%d+) (%s*) (.*)")
-	if startAddr == nil then
+	if startAddr == nil then -- if the "from" field is nil, all variables will be nil.  Filter again.
 		startAddr, endAddr, permission, offset, dev1, dev2, length, from = string.match(line, "(%x+)-(%x+) (.+) (%x+) (%x+):(%x+) (%d+) (%s*)")
 	end
 	if permission ~= "rw-p" then return nil end
@@ -115,7 +116,37 @@ local function search(pid, value, regionName)
 			end
 		end
 	else -- float value
+		local paramFloat32Value = ffi.new("union value_t", { float32_value = value })
+		local paramFloat64Value = ffi.new("union value_t", { float64_value = value })
+		local paramFloat32ValueFirstByte = paramFloat32Value.bytes[0]		-- MUST cache!!!
+		local paramFloat32ValueAccurate = paramFloat32Value.float32_value	-- MUST cache!!!
+		local paramFloat64ValueFirstByte = paramFloat64Value.bytes[0]		-- MUST cache!!!
+		local scannedValue = ffi.new("union value_t", {})
 
+		for mapsIndex=1,#regions do
+			local startAddr = regions[mapsIndex][0]
+			local endAddr = regions[mapsIndex][1]
+			local length = endAddr-startAddr
+			memFile:seek("set", startAddr)
+			local data = memFile:read(length)
+			if data ~= nil then
+				for offset=1,length do
+					local byte = data:byte(offset)
+					if byte == paramFloat32ValueFirstByte then
+						scannedValue.bytes = data:sub(offset, offset+ffi.sizeof("double"))
+						if paramFloat32ValueAccurate == scannedValue.float32_value then
+							print("found at " .. string.format("%x", startAddr+offset-1) .. " type: float32")
+						end
+					end
+					if byte == paramFloat64ValueFirstByte then
+						scannedValue.bytes = data:sub(offset, offset+ffi.sizeof("double"))
+						if value == scannedValue.float64_value then
+							print("found at " .. string.format("%x", startAddr+offset-1) .. " type: float64")
+						end
+					end
+				end
+			end
+		end
 	end
 	
 	memFile:close()
