@@ -130,10 +130,10 @@ local function search(pid, value, regionName)
 			memFile:seek("set", startAddr)
 			local data = memFile:read(length)
 			if data ~= nil then
-				for offset=1,length do
+				for offset=1,length,ffi.sizeof("float") do
 					local byte = data:byte(offset)
 					if byte == paramFloat32ValueFirstByte then
-						scannedValue.bytes = data:sub(offset, offset+ffi.sizeof("double"))
+						scannedValue.bytes = data:sub(offset, offset+ffi.sizeof("float"))
 						if paramFloat32ValueAccurate == scannedValue.float32_value then
 							print("found at " .. string.format("%x", startAddr+offset-1) .. " type: float32")
 						end
