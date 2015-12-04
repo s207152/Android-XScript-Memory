@@ -122,7 +122,7 @@ local function search(pid, value, regionName)
 	return regions
 end
 
-function export.search((pid, value, regionName)
+function export.search(pid, value, regionName)
   search(pid, value, regionName)
 end
 
