@@ -30,7 +30,7 @@ local int32_max, int32_min = getTypeMaxMin("int32_t")
 local int64_max, int64_min = getTypeMaxMin("int64_t")
 
 ------------------------------------------------------------------------------
-function assertProcessExists(pid)
+local function assertProcessExists(pid)
 	local procFile = io.open("/proc/" .. pid .. "/maps", "r")
 	if procFile == nil then
 		error("'pid' is not correct, process does not exists")	-- the process should be dead
@@ -153,8 +153,15 @@ local function search(pid, value, regionName)
 	return regions
 end
 
+------------------------------------------------------------------------------
+-- Exports
+------------------------------------------------------------------------------
 function export.search(pid, value, regionName)
   search(pid, value, regionName)
+end
+
+function export.isProcessRunning(pid)
+  assertProcessExists(pid)
 end
 
 return export
